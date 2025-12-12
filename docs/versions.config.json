@@ -1,4 +1,6 @@
 {
+  "$schema": "./versions.schema.json",
+  "$comment": "文档版本配置 - 详见 README.md",
   "defaultLocale": "zh",
   "remote": {
     "repoOwner": "Funsdata",

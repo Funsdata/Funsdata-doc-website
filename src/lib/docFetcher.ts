@@ -1,8 +1,6 @@
-import { docsConfig } from '../config/docs';
+import { docsConfig, buildJsDelivrUrl, buildGitHubRawUrl } from '../config/docs';
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
-
-const ensureLeadingSlash = (value: string) => (value.startsWith('/') ? value : `/${value}`);
 
 const unique = <T,>(values: T[]): T[] => Array.from(new Set(values));
 
@@ -14,9 +12,16 @@ export type FetchDocParams = {
   localeCdnBase?: string | null;
 };
 
+/**
+ * 构建文档资源 URL 列表（按优先级排序）
+ *
+ * 优先级顺序：
+ * 1. 阿里云 CDN（如配置）
+ * 2. 语言级别 CDN（如配置）
+ * 3. jsDelivr CDN（GitHub 代理，无 rate limit）
+ * 4. GitHub Raw（备用）
+ */
 const buildDocSources = ({
-  locale,
-  versionId,
   versionPath,
   relativePath,
   localeCdnBase
@@ -24,39 +29,63 @@ const buildDocSources = ({
   const normalizedRelative = relativePath.replace(/\\/g, '/');
   const normalizedVersionPath = versionPath.replace(/\\/g, '/').replace(/^\//, '');
   const docPathFromRoot = `${normalizedVersionPath.replace(/\/$/, '')}/${normalizedRelative}`;
-  const cdnCandidates: string[] = [];
+  const sources: string[] = [];
 
-  if (docsConfig.globalCdnBaseUrl) {
-    cdnCandidates.push(
-      `${trimTrailingSlash(docsConfig.globalCdnBaseUrl)}/${docPathFromRoot}`
-    );
+  // 1. 阿里云 CDN（主要源）
+  if (docsConfig.cdnBaseUrl) {
+    sources.push(`${trimTrailingSlash(docsConfig.cdnBaseUrl)}/${docPathFromRoot}`);
   }
 
+  // 2. 语言级别 CDN
   if (localeCdnBase) {
-    cdnCandidates.push(`${trimTrailingSlash(localeCdnBase)}/${docPathFromRoot}`);
+    sources.push(`${trimTrailingSlash(localeCdnBase)}/${docPathFromRoot}`);
   }
 
-  const gitHubBase =
-    docsConfig.repoOwner && docsConfig.repoName
-      ? `https://raw.githubusercontent.com/${docsConfig.repoOwner}/${docsConfig.repoName}/${docsConfig.repoBranch}`
-      : null;
+  // 3. jsDelivr CDN（GitHub 代理，无 rate limit，推荐）
+  if (docsConfig.useJsDelivr && docsConfig.repoOwner && docsConfig.repoName) {
+    sources.push(buildJsDelivrUrl(docPathFromRoot));
+  }
 
-  const gitHubUrl = gitHubBase ? `${gitHubBase}/docs/${docPathFromRoot}` : null;
+  // 4. GitHub Raw（备用，有 rate limit）
+  if (docsConfig.repoOwner && docsConfig.repoName) {
+    sources.push(buildGitHubRawUrl(docPathFromRoot));
+  }
 
-  const localFallback = `${trimTrailingSlash(docsConfig.localFallbackBaseUrl)}${ensureLeadingSlash(
-    `${locale}/${versionId}/${normalizedRelative}`
-  )}`;
+  return unique(sources);
+};
 
-  return unique([
-    ...cdnCandidates,
-    ...(gitHubUrl ? [gitHubUrl] : []),
-    localFallback
-  ]);
+/**
+ * 获取文档内容的基础 URL（用于解析相对路径资源）
+ */
+export const getDocBaseUrl = (params: Omit<FetchDocParams, 'relativePath'>): string => {
+  const normalizedVersionPath = params.versionPath.replace(/\\/g, '/').replace(/^\//, '').replace(/\/$/, '');
+
+  // 优先使用阿里云 CDN
+  if (docsConfig.cdnBaseUrl) {
+    return `${trimTrailingSlash(docsConfig.cdnBaseUrl)}/${normalizedVersionPath}`;
+  }
+
+  // 其次使用语言级别 CDN
+  if (params.localeCdnBase) {
+    return `${trimTrailingSlash(params.localeCdnBase)}/${normalizedVersionPath}`;
+  }
+
+  // 使用 jsDelivr
+  if (docsConfig.useJsDelivr && docsConfig.repoOwner && docsConfig.repoName) {
+    return `https://cdn.jsdelivr.net/gh/${docsConfig.repoOwner}/${docsConfig.repoName}@${docsConfig.repoBranch}/${normalizedVersionPath}`;
+  }
+
+  // 备用：GitHub Raw
+  return `https://raw.githubusercontent.com/${docsConfig.repoOwner}/${docsConfig.repoName}/${docsConfig.repoBranch}/${normalizedVersionPath}`;
 };
 
 export async function fetchDocMarkdown(params: FetchDocParams): Promise<{ markdown: string; origin: string }> {
   const sources = buildDocSources(params);
   const timeoutMs = docsConfig.requestTimeoutMs;
+
+  if (sources.length === 0) {
+    throw new Error('No document sources configured. Please set VITE_DOCS_CDN_BASE_URL or GitHub repo settings.');
+  }
 
   for (const url of sources) {
     try {

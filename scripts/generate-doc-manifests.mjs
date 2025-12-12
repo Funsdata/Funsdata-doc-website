@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+/**
+ * 文档 Manifest 生成脚本
+ *
+ * 功能：
+ * 1. 从 GitHub 仓库或本地目录读取 Markdown 文档
+ * 2. 生成 TOC（目录树）和搜索索引 JSON 文件
+ * 3. 不再复制文档到 public/raw/（内容从 CDN 动态加载）
+ */
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,7 +22,6 @@ const docsRoot = path.join(projectRoot, 'docs');
 const cacheRoot = path.join(projectRoot, '.cache', 'docs');
 const versionsConfigPath = path.join(docsRoot, 'versions.config.json');
 const manifestRoot = path.join(projectRoot, 'public', 'manifest');
-const rawOutputRoot = path.join(projectRoot, 'public', 'raw');
 
 const docsMirrorRoot = process.env.DOCS_LOCAL_MIRROR ? path.resolve(projectRoot, process.env.DOCS_LOCAL_MIRROR) : null;
 const githubToken = process.env.DOCS_GITHUB_TOKEN ?? process.env.GITHUB_TOKEN ?? null;
@@ -78,12 +85,6 @@ async function extractDocMeta(filePath) {
     .trim();
   const excerpt = stripped.slice(0, 220);
   return { title, headings: headings.slice(1), excerpt, raw };
-}
-
-async function copyRawFile(sourcePath, relativePath) {
-  const destinationPath = path.join(rawOutputRoot, relativePath);
-  await ensureDir(path.dirname(destinationPath));
-  await fs.copyFile(sourcePath, destinationPath);
 }
 
 async function fetchGithubJson(url) {
@@ -167,7 +168,7 @@ async function resolveVersionRoot({ locale, versionId, versionPath, remote }) {
   return { absoluteRoot: cacheDestination, source: 'remote' };
 }
 
-async function walkDocs({ locale, versionId, versionPath, absoluteRoot }) {
+async function walkDocs({ locale, versionId, absoluteRoot }) {
   const tocChildren = [];
   const searchEntries = [];
   let docCount = 0;
@@ -217,7 +218,6 @@ async function walkDocs({ locale, versionId, versionPath, absoluteRoot }) {
         excerpt
       });
 
-      await copyRawFile(absoluteFilePath, path.join(locale, versionId, normalizedPath));
       docCount += 1;
     }
 
@@ -232,9 +232,7 @@ async function walkDocs({ locale, versionId, versionPath, absoluteRoot }) {
 
 async function cleanOutputRoots() {
   await fs.rm(manifestRoot, { recursive: true, force: true });
-  await fs.rm(rawOutputRoot, { recursive: true, force: true });
   await ensureDir(manifestRoot);
-  await ensureDir(rawOutputRoot);
   await ensureDir(cacheRoot);
 }
 
@@ -286,7 +284,6 @@ async function main() {
       const { toc, searchEntries, docCount } = await walkDocs({
         locale: localeConfig.locale,
         versionId: version.id,
-        versionPath: normalizedPath,
         absoluteRoot
       });
 

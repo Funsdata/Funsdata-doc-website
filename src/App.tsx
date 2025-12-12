@@ -7,7 +7,7 @@ import { SearchModal } from './components/SearchModal';
 import { manifestEndpoints } from './config/docs';
 import type { DocHeading, SearchEntry, TocDocNode, TocNode, VersionsManifest } from './types/docs';
 import { findDocBySlug, findFirstDoc } from './lib/tree';
-import { fetchDocMarkdown } from './lib/docFetcher';
+import { fetchDocMarkdown, getDocBaseUrl } from './lib/docFetcher';
 import { renderMarkdown } from './lib/markdown';
 import { useKeyboardShortcut } from './hooks/useKeyboardShortcut';
 
@@ -149,14 +149,19 @@ function App() {
       try {
         setDocLoading(true);
         setDocError(null);
-        const { markdown, origin } = await fetchDocMarkdown({
+        const fetchParams = {
           locale: currentLocale,
           versionId: currentVersion,
           versionPath: versionMeta.path,
           relativePath: node.path,
           localeCdnBase: localeMeta.cdnBaseUrl ?? undefined
+        };
+        const { markdown, origin } = await fetchDocMarkdown(fetchParams);
+        const baseUrl = getDocBaseUrl(fetchParams);
+        const rendered = renderMarkdown(markdown, {
+          baseUrl,
+          docPath: node.path
         });
-        const rendered = renderMarkdown(markdown);
         setDocHtml(rendered.html);
         setDocHeadings(rendered.headings);
         setDocOrigin(origin);
