@@ -1,0 +1,37 @@
+{
+  "defaultLocale": "zh",
+  "remote": {
+    "repoOwner": "Funsdata",
+    "repoName": "FunsdataBI-doc",
+    "repoBranch": "master",
+    "baseDir": ""
+  },
+  "locales": [
+    {
+      "locale": "zh",
+      "label": "中文",
+      "cdnBaseUrl": null,
+      "versions": [
+        {
+          "id": "latest",
+          "label": "最新",
+          "path": "zh",
+          "isLatest": true
+        }
+      ]
+    },
+    {
+      "locale": "en",
+      "label": "English",
+      "cdnBaseUrl": null,
+      "versions": [
+        {
+          "id": "latest",
+          "label": "Latest",
+          "path": "en",
+          "isLatest": true
+        }
+      ]
+    }
+  ]
+}
