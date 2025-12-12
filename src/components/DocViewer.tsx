@@ -12,7 +12,7 @@ type DocViewerProps = {
 export const DocViewer = ({ documentNode, html, origin, isLoading, error, onRetry }: DocViewerProps) => {
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-slate-200 bg-white">
+      <div className="flex min-h-96 items-center justify-center bg-white">
         <p className="text-sm text-slate-500">正在加载文档…</p>
       </div>
     );
@@ -20,7 +20,7 @@ export const DocViewer = ({ documentNode, html, origin, isLoading, error, onRetr
 
   if (error) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-white p-10 text-center">
+      <div className="flex min-h-96 flex-col items-center justify-center gap-3 bg-white p-10 text-center">
         <p className="text-base font-semibold text-rose-600">无法加载文档</p>
         <p className="text-sm text-slate-500">{error}</p>
         <button
@@ -36,14 +36,14 @@ export const DocViewer = ({ documentNode, html, origin, isLoading, error, onRetr
 
   if (!documentNode) {
     return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white">
+      <div className="flex min-h-96 items-center justify-center bg-white">
         <p className="text-sm text-slate-500">请选择左侧的文章开始阅读。</p>
       </div>
     );
   }
 
   return (
-    <article className="doc-viewer h-full overflow-y-auto rounded-2xl border border-slate-200 bg-white px-8 py-8">
+    <article className="doc-viewer bg-white px-8 py-6">
       <div className="flex items-center justify-between border-b border-slate-100 pb-6">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-400">帮助文档</p>

@@ -199,21 +199,23 @@ function App() {
         <div className="bg-rose-50 px-6 py-3 text-sm text-rose-600">{manifestError}</div>
       )}
 
-      <div className="grid flex-1 grid-cols-1 gap-6 px-6 py-6 lg:grid-cols-[260px_minmax(0,1fr)_220px]">
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-          <Sidebar tree={toc} selectedSlug={selectedSlug} onSelect={(node) => setSelectedSlug(node.slug)} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-1 items-start lg:grid-cols-[260px_minmax(0,1fr)_220px]">
+          <div className="sticky top-0 min-h-[calc(100vh-4.5rem)] max-h-[calc(100vh-4.5rem)] overflow-y-auto border-r border-slate-200 bg-white px-4 py-4">
+            <Sidebar tree={toc} selectedSlug={selectedSlug} onSelect={(node) => setSelectedSlug(node.slug)} />
+          </div>
+
+          <DocViewer
+            documentNode={selectedDocNode}
+            html={docHtml}
+            origin={docOrigin}
+            isLoading={docLoading}
+            error={docError}
+            onRetry={handleRetry}
+          />
+
+          <TocPanel headings={docHeadings} locale={currentLocale} />
         </div>
-
-        <DocViewer
-          documentNode={selectedDocNode}
-          html={docHtml}
-          origin={docOrigin}
-          isLoading={docLoading}
-          error={docError}
-          onRetry={handleRetry}
-        />
-
-        <TocPanel headings={docHeadings} />
       </div>
 
       {isSearchOpen && (
