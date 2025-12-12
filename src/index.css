@@ -1,0 +1,54 @@
+/* stylelint-disable at-rule-no-unknown */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* stylelint-enable at-rule-no-unknown */
+
+:root {
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  color: #0f172a;
+  background-color: #f8fafc;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #f8fafc;
+}
+
+.doc-viewer .prose pre {
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.doc-viewer .prose code {
+  font-size: 0.9em;
+}
+
+.doc-viewer .prose table {
+  width: 100%;
+}
+
+.doc-viewer .prose table td,
+.doc-viewer .prose table th {
+  border: 1px solid #e2e8f0;
+  padding: 0.4rem 0.75rem;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar,
+.toc-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb,
+.toc-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(15, 23, 42, 0.2);
+  border-radius: 999px;
+}
