@@ -193,6 +193,7 @@ function App() {
       {isSearchOpen && (
         <SearchModal
           entries={searchEntries}
+          locale={currentLocale}
           onClose={() => setIsSearchOpen(false)}
           onSelect={(entry) => setSelectedSlug(entry.slug)}
         />
