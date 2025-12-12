@@ -42,6 +42,28 @@ body {
   padding: 0.4rem 0.75rem;
 }
 
+/* 标题锚点样式 */
+.doc-viewer .prose .header-anchor {
+  margin-left: 0.5rem;
+  color: #94a3b8;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.doc-viewer .prose h1:hover .header-anchor,
+.doc-viewer .prose h2:hover .header-anchor,
+.doc-viewer .prose h3:hover .header-anchor,
+.doc-viewer .prose h4:hover .header-anchor,
+.doc-viewer .prose h5:hover .header-anchor,
+.doc-viewer .prose h6:hover .header-anchor {
+  opacity: 1;
+}
+
+.doc-viewer .prose .header-anchor:hover {
+  color: #3b82f6;
+}
+
 .sidebar-scrollbar::-webkit-scrollbar,
 .toc-scrollbar::-webkit-scrollbar {
   width: 6px;

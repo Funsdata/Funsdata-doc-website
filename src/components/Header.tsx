@@ -1,29 +1,24 @@
-import type { VersionsManifest } from '../types/docs';
+import type { LocaleConfig } from '../types/docs';
 
 type HeaderProps = {
-  locales: VersionsManifest['locales'];
+  locales: LocaleConfig[];
   currentLocale?: string;
-  currentVersion?: string;
   onLocaleChange: (locale: string) => void;
-  onVersionChange: (versionId: string) => void;
   onOpenSearch: () => void;
 };
 
 export const Header = ({
   locales,
   currentLocale,
-  currentVersion,
   onLocaleChange,
-  onVersionChange,
   onOpenSearch
 }: HeaderProps) => {
   const activeLocale = locales.find((locale) => locale.locale === currentLocale) ?? locales[0];
-  const versions = activeLocale?.versions ?? [];
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4 shadow-sm">
       <div>
-        <p className="text-xs uppercase tracking-widest text-slate-400">Funsdata-doc-website</p>
+        <p className="text-xs uppercase tracking-widest text-slate-400">Funsdata</p>
         <h1 className="text-xl font-semibold text-slate-900">知识库与帮助中心</h1>
       </div>
 
@@ -46,19 +41,6 @@ export const Header = ({
           {locales.map((locale) => (
             <option key={locale.locale} value={locale.locale}>
               {locale.label}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="rounded border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-          value={currentVersion ?? versions[0]?.id ?? ''}
-          onChange={(event) => onVersionChange(event.target.value)}
-        >
-          {versions.map((version) => (
-            <option key={version.id} value={version.id}>
-              {version.label}
-              {version.isLatest ? ' · 最新' : ''}
             </option>
           ))}
         </select>

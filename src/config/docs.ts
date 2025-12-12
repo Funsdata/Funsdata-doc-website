@@ -36,5 +36,5 @@ export const buildGitHubRawUrl = (filePath: string): string => {
 };
 
 export const manifestEndpoints = {
-  versions: '/manifest/versions.json'
+  manifest: '/manifest/manifest.json'
 };

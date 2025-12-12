@@ -3,13 +3,12 @@ import type { TocDocNode } from '../types/docs';
 type DocViewerProps = {
   documentNode?: TocDocNode | null;
   html?: string;
-  origin?: string;
   isLoading: boolean;
   error?: string | null;
   onRetry: () => void;
 };
 
-export const DocViewer = ({ documentNode, html, origin, isLoading, error, onRetry }: DocViewerProps) => {
+export const DocViewer = ({ documentNode, html, isLoading, error, onRetry }: DocViewerProps) => {
   if (isLoading) {
     return (
       <div className="flex min-h-96 items-center justify-center bg-white">
@@ -44,18 +43,7 @@ export const DocViewer = ({ documentNode, html, origin, isLoading, error, onRetr
 
   return (
     <article className="doc-viewer bg-white px-8 py-6">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-6">
-        <div>
-          <h2 className="text-3xl font-semibold text-slate-900">{documentNode.title}</h2>
-        </div>
-        {origin && (
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
-            来源：{origin}
-          </span>
-        )}
-      </div>
-
-      <div className="prose prose-slate mt-6 max-w-none" dangerouslySetInnerHTML={{ __html: html ?? '' }} />
+      <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: html ?? '' }} />
     </article>
   );
 };

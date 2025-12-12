@@ -5,9 +5,7 @@ const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const unique = <T,>(values: T[]): T[] => Array.from(new Set(values));
 
 export type FetchDocParams = {
-  locale: string;
-  versionId: string;
-  versionPath: string;
+  localePath: string;
   relativePath: string;
   localeCdnBase?: string | null;
 };
@@ -22,13 +20,13 @@ export type FetchDocParams = {
  * 4. GitHub Raw（备用）
  */
 const buildDocSources = ({
-  versionPath,
+  localePath,
   relativePath,
   localeCdnBase
 }: FetchDocParams) => {
   const normalizedRelative = relativePath.replace(/\\/g, '/');
-  const normalizedVersionPath = versionPath.replace(/\\/g, '/').replace(/^\//, '');
-  const docPathFromRoot = `${normalizedVersionPath.replace(/\/$/, '')}/${normalizedRelative}`;
+  const normalizedLocalePath = localePath.replace(/\\/g, '/').replace(/^\//, '');
+  const docPathFromRoot = `${normalizedLocalePath.replace(/\/$/, '')}/${normalizedRelative}`;
   const sources: string[] = [];
 
   // 1. 阿里云 CDN（主要源）
@@ -58,28 +56,28 @@ const buildDocSources = ({
  * 获取文档内容的基础 URL（用于解析相对路径资源）
  */
 export const getDocBaseUrl = (params: Omit<FetchDocParams, 'relativePath'>): string => {
-  const normalizedVersionPath = params.versionPath.replace(/\\/g, '/').replace(/^\//, '').replace(/\/$/, '');
+  const normalizedLocalePath = params.localePath.replace(/\\/g, '/').replace(/^\//, '').replace(/\/$/, '');
 
   // 优先使用阿里云 CDN
   if (docsConfig.cdnBaseUrl) {
-    return `${trimTrailingSlash(docsConfig.cdnBaseUrl)}/${normalizedVersionPath}`;
+    return `${trimTrailingSlash(docsConfig.cdnBaseUrl)}/${normalizedLocalePath}`;
   }
 
   // 其次使用语言级别 CDN
   if (params.localeCdnBase) {
-    return `${trimTrailingSlash(params.localeCdnBase)}/${normalizedVersionPath}`;
+    return `${trimTrailingSlash(params.localeCdnBase)}/${normalizedLocalePath}`;
   }
 
   // 使用 jsDelivr
   if (docsConfig.useJsDelivr && docsConfig.repoOwner && docsConfig.repoName) {
-    return `https://cdn.jsdelivr.net/gh/${docsConfig.repoOwner}/${docsConfig.repoName}@${docsConfig.repoBranch}/${normalizedVersionPath}`;
+    return `https://cdn.jsdelivr.net/gh/${docsConfig.repoOwner}/${docsConfig.repoName}@${docsConfig.repoBranch}/${normalizedLocalePath}`;
   }
 
   // 备用：GitHub Raw
-  return `https://raw.githubusercontent.com/${docsConfig.repoOwner}/${docsConfig.repoName}/${docsConfig.repoBranch}/${normalizedVersionPath}`;
+  return `https://raw.githubusercontent.com/${docsConfig.repoOwner}/${docsConfig.repoName}/${docsConfig.repoBranch}/${normalizedLocalePath}`;
 };
 
-export async function fetchDocMarkdown(params: FetchDocParams): Promise<{ markdown: string; origin: string }> {
+export async function fetchDocMarkdown(params: FetchDocParams): Promise<{ markdown: string }> {
   const sources = buildDocSources(params);
   const timeoutMs = docsConfig.requestTimeoutMs;
 
@@ -100,7 +98,7 @@ export async function fetchDocMarkdown(params: FetchDocParams): Promise<{ markdo
         continue;
       }
       const markdown = await response.text();
-      return { markdown, origin: url };
+      return { markdown };
     } catch (error) {
       console.warn(`[docs] failed to fetch ${url}`, error);
     }

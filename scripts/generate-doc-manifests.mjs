@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 const docsRoot = path.join(projectRoot, 'docs');
 const cacheRoot = path.join(projectRoot, '.cache', 'docs');
-const versionsConfigPath = path.join(docsRoot, 'versions.config.json');
+const configPath = path.join(docsRoot, 'versions.config.json');
 const manifestRoot = path.join(projectRoot, 'public', 'manifest');
 
 const docsMirrorRoot = process.env.DOCS_LOCAL_MIRROR ? path.resolve(projectRoot, process.env.DOCS_LOCAL_MIRROR) : null;
@@ -44,7 +44,7 @@ const remoteState = {
 };
 
 const trimSlashes = (value = '') => value.replace(/^\/+|\/+$/g, '');
-const normalizeVersionPath = (value = '') => trimSlashes(value.replace(/\\/g, '/'));
+const normalizePath = (value = '') => trimSlashes(value.replace(/\\/g, '/'));
 
 async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
@@ -64,9 +64,9 @@ async function readJson(filePath) {
   return JSON.parse(buffer);
 }
 
-function toSlug(locale, versionId, relativeFilePath) {
+function toSlug(locale, relativeFilePath) {
   const withoutExt = relativeFilePath.replace(/\\/g, '/').replace(/\.md$/i, '');
-  return `/${locale}/${versionId}/${withoutExt}`;
+  return `/${locale}/${withoutExt}`;
 }
 
 async function extractDocMeta(filePath) {
@@ -122,9 +122,9 @@ async function downloadRawFile(remote, remoteFilePath, destinationPath) {
   await fs.writeFile(destinationPath, content, 'utf8');
 }
 
-async function mirrorRemoteVersion({ remote, versionPath, destination }) {
+async function mirrorRemoteLocale({ remote, localePath, destination }) {
   const tree = await loadRemoteTree(remote);
-  const remotePrefix = trimSlashes(path.posix.join(remote.baseDir ?? '', versionPath));
+  const remotePrefix = trimSlashes(path.posix.join(remote.baseDir ?? '', localePath));
   const prefixWithSlash = remotePrefix ? `${remotePrefix}/` : '';
   const relevantFiles = tree.filter((entry) => entry.type === 'blob' && entry.path.startsWith(prefixWithSlash) && markdownExtensionPattern.test(entry.path));
 
@@ -145,8 +145,8 @@ async function mirrorRemoteVersion({ remote, versionPath, destination }) {
   return destination;
 }
 
-async function resolveVersionRoot({ locale, versionId, versionPath, remote }) {
-  const normalizedPath = normalizeVersionPath(versionPath);
+async function resolveLocaleRoot({ locale, localePath, remote }) {
+  const normalizedPath = normalizePath(localePath);
   const localCandidate = path.join(docsRoot, normalizedPath);
   if (await pathExists(localCandidate)) {
     return { absoluteRoot: localCandidate, source: 'project' };
@@ -160,15 +160,15 @@ async function resolveVersionRoot({ locale, versionId, versionPath, remote }) {
   }
 
   if (!remote) {
-    throw new Error(`Missing docs for ${locale}/${versionId} at ${localCandidate}. Provide local Markdown files or configure a remote source.`);
+    throw new Error(`Missing docs for ${locale} at ${localCandidate}. Provide local Markdown files or configure a remote source.`);
   }
 
-  const cacheDestination = path.join(cacheRoot, locale, versionId);
-  await mirrorRemoteVersion({ remote, versionPath: normalizedPath, destination: cacheDestination });
+  const cacheDestination = path.join(cacheRoot, locale);
+  await mirrorRemoteLocale({ remote, localePath: normalizedPath, destination: cacheDestination });
   return { absoluteRoot: cacheDestination, source: 'remote' };
 }
 
-async function walkDocs({ locale, versionId, absoluteRoot }) {
+async function walkDocs({ locale, absoluteRoot }) {
   const tocChildren = [];
   const searchEntries = [];
   let docCount = 0;
@@ -198,7 +198,7 @@ async function walkDocs({ locale, versionId, absoluteRoot }) {
       const relativeFilePath = path.join(relativeDir, file.name);
       const absoluteFilePath = path.join(dirPath, file.name);
       const { title, headings, excerpt } = await extractDocMeta(absoluteFilePath);
-      const slug = toSlug(locale, versionId, relativeFilePath);
+      const slug = toSlug(locale, relativeFilePath);
       const normalizedPath = relativeFilePath.replace(/\\/g, '/');
 
       children.push({
@@ -255,76 +255,61 @@ function normalizeConfigRemote(remote) {
 }
 
 async function main() {
-  if (!(await pathExists(versionsConfigPath))) {
-    throw new Error(`Cannot find ${versionsConfigPath}. Please create versions.config.json first.`);
+  if (!(await pathExists(configPath))) {
+    throw new Error(`Cannot find ${configPath}. Please create versions.config.json first.`);
   }
 
   await cleanOutputRoots();
-  const config = await readJson(versionsConfigPath);
+  const config = await readJson(configPath);
   const remote = normalizeConfigRemote(config.remote ?? null);
-  const versionsSummary = [];
+  const localesSummary = [];
 
   for (const localeConfig of config.locales) {
-    const localeSummary = {
+    const normalizedPath = normalizePath(localeConfig.path);
+    const { absoluteRoot } = await resolveLocaleRoot({
+      locale: localeConfig.locale,
+      localePath: normalizedPath,
+      remote
+    });
+
+    const { toc, searchEntries, docCount } = await walkDocs({
+      locale: localeConfig.locale,
+      absoluteRoot
+    });
+
+    const tocFileName = `toc-${localeConfig.locale}.json`;
+    const searchFileName = `search-${localeConfig.locale}.json`;
+
+    await fs.writeFile(path.join(manifestRoot, tocFileName), JSON.stringify({
+      locale: localeConfig.locale,
+      generatedAt: new Date().toISOString(),
+      tree: toc
+    }, null, 2));
+
+    await fs.writeFile(path.join(manifestRoot, searchFileName), JSON.stringify({
+      locale: localeConfig.locale,
+      generatedAt: new Date().toISOString(),
+      entries: searchEntries
+    }, null, 2));
+
+    localesSummary.push({
       locale: localeConfig.locale,
       label: localeConfig.label,
+      path: normalizedPath,
       cdnBaseUrl: localeConfig.cdnBaseUrl ?? null,
-      versions: []
-    };
-
-    for (const version of localeConfig.versions) {
-      const normalizedPath = normalizeVersionPath(version.path);
-      const { absoluteRoot } = await resolveVersionRoot({
-        locale: localeConfig.locale,
-        versionId: version.id,
-        versionPath: normalizedPath,
-        remote
-      });
-
-      const { toc, searchEntries, docCount } = await walkDocs({
-        locale: localeConfig.locale,
-        versionId: version.id,
-        absoluteRoot
-      });
-
-      const tocFileName = `toc-${localeConfig.locale}-${version.id}.json`;
-      const searchFileName = `search-${localeConfig.locale}-${version.id}.json`;
-
-      await fs.writeFile(path.join(manifestRoot, tocFileName), JSON.stringify({
-        locale: localeConfig.locale,
-        version: version.id,
-        generatedAt: new Date().toISOString(),
-        tree: toc
-      }, null, 2));
-
-      await fs.writeFile(path.join(manifestRoot, searchFileName), JSON.stringify({
-        locale: localeConfig.locale,
-        version: version.id,
-        generatedAt: new Date().toISOString(),
-        entries: searchEntries
-      }, null, 2));
-
-      localeSummary.versions.push({
-        id: version.id,
-        label: version.label,
-        path: normalizedPath,
-        isLatest: Boolean(version.isLatest),
-        tocFile: tocFileName,
-        searchFile: searchFileName,
-        docCount
-      });
-    }
-
-    versionsSummary.push(localeSummary);
+      tocFile: tocFileName,
+      searchFile: searchFileName,
+      docCount
+    });
   }
 
-  await fs.writeFile(path.join(manifestRoot, 'versions.json'), JSON.stringify({
+  await fs.writeFile(path.join(manifestRoot, 'manifest.json'), JSON.stringify({
     generatedAt: new Date().toISOString(),
     defaultLocale: config.defaultLocale,
-    locales: versionsSummary
+    locales: localesSummary
   }, null, 2));
 
-  console.log(`✔ Generated manifests for ${versionsSummary.length} locale(s)`);
+  console.log(`✔ Generated manifests for ${localesSummary.length} locale(s)`);
 }
 
 main().catch((error) => {

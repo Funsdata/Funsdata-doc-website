@@ -5,22 +5,20 @@ import { DocViewer } from './components/DocViewer';
 import { TocPanel } from './components/TocPanel';
 import { SearchModal } from './components/SearchModal';
 import { manifestEndpoints } from './config/docs';
-import type { DocHeading, SearchEntry, TocDocNode, TocNode, VersionsManifest } from './types/docs';
+import type { DocHeading, DocsManifest, LocaleConfig, SearchEntry, TocDocNode, TocNode } from './types/docs';
 import { findDocBySlug, findFirstDoc } from './lib/tree';
 import { fetchDocMarkdown, getDocBaseUrl } from './lib/docFetcher';
 import { renderMarkdown } from './lib/markdown';
 import { useKeyboardShortcut } from './hooks/useKeyboardShortcut';
 
 function App() {
-  const [manifest, setManifest] = useState<VersionsManifest | null>(null);
+  const [manifest, setManifest] = useState<DocsManifest | null>(null);
   const [toc, setToc] = useState<TocNode[]>([]);
   const [searchEntries, setSearchEntries] = useState<SearchEntry[]>([]);
   const [currentLocale, setCurrentLocale] = useState<string>();
-  const [currentVersion, setCurrentVersion] = useState<string>();
   const [selectedSlug, setSelectedSlug] = useState<string>();
   const [docHtml, setDocHtml] = useState('');
   const [docHeadings, setDocHeadings] = useState<DocHeading[]>([]);
-  const [docOrigin, setDocOrigin] = useState<string>('');
   const [docLoading, setDocLoading] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
   const [docReloadKey, setDocReloadKey] = useState(0);
@@ -30,24 +28,26 @@ function App() {
   useKeyboardShortcut(['mod', 'k'], () => setIsSearchOpen(true));
   useKeyboardShortcut(['escape'], () => setIsSearchOpen(false));
 
+  // 加载 manifest
   useEffect(() => {
     const loadManifest = async () => {
       try {
         setManifestError(null);
-        const response = await fetch(manifestEndpoints.versions, { cache: 'no-cache' });
+        const response = await fetch(manifestEndpoints.manifest, { cache: 'no-cache' });
         if (!response.ok) {
-          throw new Error('无法加载版本清单');
+          throw new Error('无法加载文档清单');
         }
-        const data = (await response.json()) as VersionsManifest;
+        const data = (await response.json()) as DocsManifest;
         setManifest(data);
       } catch (error) {
-        setManifestError(error instanceof Error ? error.message : '加载版本信息失败');
+        setManifestError(error instanceof Error ? error.message : '加载文档信息失败');
       }
     };
 
     loadManifest();
   }, []);
 
+  // 设置默认语言
   useEffect(() => {
     if (!manifest || currentLocale) {
       return;
@@ -56,29 +56,27 @@ function App() {
       manifest.locales.find((item) => item.locale === manifest.defaultLocale) ?? manifest.locales[0];
     if (defaultLocale) {
       setCurrentLocale(defaultLocale.locale);
-      const defaultVersion = defaultLocale.versions.find((version) => version.isLatest) ?? defaultLocale.versions[0];
-      if (defaultVersion) {
-        setCurrentVersion(defaultVersion.id);
-      }
     }
   }, [manifest, currentLocale]);
 
+  // 获取当前语言配置
+  const currentLocaleConfig: LocaleConfig | undefined = useMemo(() => {
+    if (!manifest || !currentLocale) return undefined;
+    return manifest.locales.find((item) => item.locale === currentLocale);
+  }, [manifest, currentLocale]);
+
+  // 加载 TOC 和搜索索引
   useEffect(() => {
-    const loadVersionData = async () => {
-      if (!manifest || !currentLocale || !currentVersion) {
-        return;
-      }
-      const locale = manifest.locales.find((item) => item.locale === currentLocale);
-      const version = locale?.versions.find((item) => item.id === currentVersion);
-      if (!locale || !version) {
+    const loadLocaleData = async () => {
+      if (!currentLocaleConfig) {
         return;
       }
 
       try {
         setManifestError(null);
         const [tocResponse, searchResponse] = await Promise.all([
-          fetch(`/manifest/${version.tocFile}`, { cache: 'no-cache' }),
-          fetch(`/manifest/${version.searchFile}`, { cache: 'no-cache' })
+          fetch(`/manifest/${currentLocaleConfig.tocFile}`, { cache: 'no-cache' }),
+          fetch(`/manifest/${currentLocaleConfig.searchFile}`, { cache: 'no-cache' })
         ]);
 
         if (!tocResponse.ok || !searchResponse.ok) {
@@ -95,26 +93,10 @@ function App() {
       }
     };
 
-    loadVersionData();
-  }, [manifest, currentLocale, currentVersion]);
+    loadLocaleData();
+  }, [currentLocaleConfig]);
 
-  useEffect(() => {
-    if (!manifest || !currentLocale) {
-      return;
-    }
-    const locale = manifest.locales.find((item) => item.locale === currentLocale);
-    if (!locale) {
-      return;
-    }
-    const hasCurrent = locale.versions.some((version) => version.id === currentVersion);
-    if (!hasCurrent) {
-      const fallback = locale.versions.find((version) => version.isLatest) ?? locale.versions[0];
-      if (fallback) {
-        setCurrentVersion(fallback.id);
-      }
-    }
-  }, [manifest, currentLocale, currentVersion]);
-
+  // 自动选择第一个文档
   useEffect(() => {
     if (toc.length === 0) {
       setSelectedSlug(undefined);
@@ -131,14 +113,10 @@ function App() {
     });
   }, [toc]);
 
+  // 加载文档内容
   useEffect(() => {
     const fetchDocument = async () => {
-      if (!manifest || !currentLocale || !currentVersion || !selectedSlug) {
-        return;
-      }
-      const localeMeta = manifest.locales.find((item) => item.locale === currentLocale);
-      const versionMeta = localeMeta?.versions.find((item) => item.id === currentVersion);
-      if (!localeMeta || !versionMeta) {
+      if (!currentLocaleConfig || !selectedSlug) {
         return;
       }
       const node = findDocBySlug(toc, selectedSlug);
@@ -150,13 +128,11 @@ function App() {
         setDocLoading(true);
         setDocError(null);
         const fetchParams = {
-          locale: currentLocale,
-          versionId: currentVersion,
-          versionPath: versionMeta.path,
+          localePath: currentLocaleConfig.path,
           relativePath: node.path,
-          localeCdnBase: localeMeta.cdnBaseUrl ?? undefined
+          localeCdnBase: currentLocaleConfig.cdnBaseUrl ?? undefined
         };
-        const { markdown, origin } = await fetchDocMarkdown(fetchParams);
+        const { markdown } = await fetchDocMarkdown(fetchParams);
         const baseUrl = getDocBaseUrl(fetchParams);
         const rendered = renderMarkdown(markdown, {
           baseUrl,
@@ -164,7 +140,6 @@ function App() {
         });
         setDocHtml(rendered.html);
         setDocHeadings(rendered.headings);
-        setDocOrigin(origin);
       } catch (error) {
         setDocError(error instanceof Error ? error.message : '文档加载失败');
       } finally {
@@ -173,7 +148,7 @@ function App() {
     };
 
     fetchDocument();
-  }, [manifest, currentLocale, currentVersion, selectedSlug, docReloadKey, toc]);
+  }, [currentLocaleConfig, selectedSlug, docReloadKey, toc]);
 
   const selectedDocNode: TocDocNode | null = useMemo(() => {
     if (!selectedSlug) return null;
@@ -189,9 +164,7 @@ function App() {
       <Header
         locales={localeList}
         currentLocale={currentLocale}
-        currentVersion={currentVersion}
         onLocaleChange={setCurrentLocale}
-        onVersionChange={setCurrentVersion}
         onOpenSearch={() => setIsSearchOpen(true)}
       />
 
@@ -208,7 +181,6 @@ function App() {
           <DocViewer
             documentNode={selectedDocNode}
             html={docHtml}
-            origin={docOrigin}
             isLoading={docLoading}
             error={docError}
             onRetry={handleRetry}

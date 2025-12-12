@@ -141,7 +141,12 @@ export const renderMarkdown = (markdown: string, options: RenderOptions = {}) =>
   const headings: DocHeading[] = [];
   const md = createMarkdownRenderer().use(anchor, {
     slugify,
-    permalink: anchor.permalink.ariaHidden({ placement: 'before' }),
+    permalink: anchor.permalink.linkInsideHeader({
+      placement: 'after',
+      symbol: '#',
+      class: 'header-anchor',
+      ariaHidden: true
+    }),
     callback(token, info) {
       const level = Number(token.tag?.replace('h', '')) || 2;
       headings.push({ id: info.slug, title: info.title, level });

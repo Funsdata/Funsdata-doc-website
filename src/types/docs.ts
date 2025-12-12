@@ -25,35 +25,24 @@ export type SearchEntry = {
   excerpt: string;
 };
 
-export type VersionsManifest = {
+export type LocaleConfig = {
+  locale: string;
+  label: string;
+  cdnBaseUrl?: string | null;
+  path: string;
+  tocFile: string;
+  searchFile: string;
+  docCount: number;
+};
+
+export type DocsManifest = {
   generatedAt: string;
   defaultLocale: string;
-  locales: Array<{
-    locale: string;
-    label: string;
-    cdnBaseUrl?: string | null;
-    versions: Array<{
-      id: string;
-      label: string;
-      path: string;
-      isLatest: boolean;
-      tocFile: string;
-      searchFile: string;
-      docCount: number;
-    }>;
-  }>;
+  locales: LocaleConfig[];
 };
 
 export type DocHeading = {
   id: string;
   title: string;
   level: number;
-};
-
-export type LoadedDoc = {
-  slug: string;
-  markdown: string;
-  html: string;
-  headings: DocHeading[];
-  origin: string;
 };

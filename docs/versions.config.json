@@ -1,6 +1,5 @@
 {
-  "$schema": "./versions.schema.json",
-  "$comment": "文档版本配置 - 详见 README.md",
+  "$comment": "文档配置 - 详见 README.md",
   "defaultLocale": "zh",
   "remote": {
     "repoOwner": "Funsdata",
@@ -12,28 +11,14 @@
     {
       "locale": "zh",
       "label": "中文",
-      "cdnBaseUrl": null,
-      "versions": [
-        {
-          "id": "latest",
-          "label": "最新",
-          "path": "zh",
-          "isLatest": true
-        }
-      ]
+      "path": "zh",
+      "cdnBaseUrl": null
     },
     {
       "locale": "en",
       "label": "English",
-      "cdnBaseUrl": null,
-      "versions": [
-        {
-          "id": "latest",
-          "label": "Latest",
-          "path": "en",
-          "isLatest": true
-        }
-      ]
+      "path": "en",
+      "cdnBaseUrl": null
     }
   ]
 }
