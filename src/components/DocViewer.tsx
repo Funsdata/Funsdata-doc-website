@@ -46,7 +46,6 @@ export const DocViewer = ({ documentNode, html, origin, isLoading, error, onRetr
     <article className="doc-viewer bg-white px-8 py-6">
       <div className="flex items-center justify-between border-b border-slate-100 pb-6">
         <div>
-          <p className="text-xs uppercase tracking-widest text-slate-400">帮助文档</p>
           <h2 className="text-3xl font-semibold text-slate-900">{documentNode.title}</h2>
         </div>
         {origin && (
