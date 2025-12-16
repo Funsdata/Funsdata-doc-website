@@ -1,0 +1,49 @@
+name: Build and Deploy to Aliyun OSS
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_DOCS_CDN_BASE_URL: https://funsdata-doc.oss-cn-beijing.aliyuncs.com
+          VITE_DOCS_REPO_OWNER: Funsdata
+          VITE_DOCS_REPO_NAME: FunsdataBI-doc
+          VITE_DOCS_REPO_BRANCH: master
+          VITE_DOCS_USE_JSDELIVR: 'false'
+
+      - name: Setup aliyun-cli
+        uses: aliyun/setup-aliyun-cli-action@v1
+        with:
+          aliyun-cli-version: '3.0.216'
+          aliyun-cli-access-key-id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          aliyun-cli-access-key-secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+          aliyun-cli-region-id: ${{ secrets.ALIYUN_REGION }}
+
+      - name: Deploy to OSS
+        run: |
+          # 同步构建产物到 OSS
+          aliyun oss sync dist/ oss://funsdata-doc-website/ \
+            --delete \
+            --exclude ".git/*"
+
+          echo "✅ Site deployed successfully!"
