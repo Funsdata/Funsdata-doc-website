@@ -187,7 +187,6 @@ VITE_DOCS_USE_JSDELIVR=false
 | --- | --- |
 | `ALIYUN_ACCESS_KEY_ID` | 阿里云 AccessKey ID |
 | `ALIYUN_ACCESS_KEY_SECRET` | 阿里云 AccessKey Secret |
-| `ALIYUN_REGION` | 区域 ID，如 `cn-hangzhou` |
 
 > **获取 AccessKey**：[阿里云 RAM 控制台](https://ram.console.aliyun.com/) → AccessKey 管理
 >
@@ -236,10 +235,16 @@ jobs:
       - name: Setup aliyun-cli
         uses: aliyun/setup-aliyun-cli-action@v1
         with:
-          aliyun-cli-version: '3.0.216'
-          aliyun-cli-access-key-id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-          aliyun-cli-access-key-secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-          aliyun-cli-region-id: 'cn-beijing'
+          version: 'latest'
+
+      - name: Configure aliyun-cli
+        run: |
+          aliyun configure set \
+            --profile default \
+            --mode AK \
+            --region cn-beijing \
+            --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
+            --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
       - name: Deploy to OSS
         run: |
@@ -274,10 +279,16 @@ jobs:
       - name: Setup aliyun-cli
         uses: aliyun/setup-aliyun-cli-action@v1
         with:
-          aliyun-cli-version: '3.0.216'
-          aliyun-cli-access-key-id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-          aliyun-cli-access-key-secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-          aliyun-cli-region-id: ${{ secrets.ALIYUN_REGION }}
+          version: 'latest'
+
+      - name: Configure aliyun-cli
+        run: |
+          aliyun configure set \
+            --profile default \
+            --mode AK \
+            --region cn-beijing \
+            --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
+            --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
       - name: Sync docs to OSS
         run: |
