@@ -42,6 +42,7 @@ jobs:
             --profile default \
             --mode AK \
             --region cn-beijing \
+            --endpoint oss-cn-beijing.aliyuncs.com \
             --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
