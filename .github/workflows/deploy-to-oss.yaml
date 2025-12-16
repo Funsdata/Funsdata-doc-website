@@ -42,13 +42,12 @@ jobs:
             --profile default \
             --mode AK \
             --region cn-beijing \
-            --endpoint oss-cn-beijing.aliyuncs.com \
             --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
       - name: Deploy to OSS
         run: |
           # 同步构建产物到 OSS
-          aliyun oss sync dist/ oss://funsdata-doc-website/ --delete
+          aliyun oss sync dist/ oss://funsdata-doc-webiste/ --delete
 
           echo "✅ Site deployed successfully!"
