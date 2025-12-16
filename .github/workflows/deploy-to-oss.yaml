@@ -47,7 +47,41 @@ jobs:
 
       - name: Deploy to OSS
         run: |
-          # 同步构建产物到 OSS
-          aliyun oss sync dist/ oss://funsdata-doc-webiste/ --delete
+          # 先删除旧文件
+          aliyun oss rm oss://funsdata-doc-webiste/ --recursive --force || true
+
+          # 上传 HTML 文件
+          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+            --include "*.html" \
+            --meta "Content-Type:text/html; charset=utf-8"
+
+          # 上传 JS 文件
+          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+            --include "*.js" \
+            --meta "Content-Type:application/javascript; charset=utf-8"
+
+          # 上传 CSS 文件
+          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+            --include "*.css" \
+            --meta "Content-Type:text/css; charset=utf-8"
+
+          # 上传 JSON 文件
+          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+            --include "*.json" \
+            --meta "Content-Type:application/json; charset=utf-8"
+
+          # 上传 SVG 文件
+          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+            --include "*.svg" \
+            --meta "Content-Type:image/svg+xml"
+
+          # 上传图片文件
+          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+            --include "*.png" --include "*.jpg" --include "*.jpeg" \
+            --include "*.gif" --include "*.webp" --include "*.ico"
+
+          # 上传字体文件
+          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+            --include "*.woff" --include "*.woff2" --include "*.ttf" --include "*.eot"
 
           echo "✅ Site deployed successfully!"
