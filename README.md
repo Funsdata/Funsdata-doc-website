@@ -249,9 +249,7 @@ jobs:
       - name: Deploy to OSS
         run: |
           # 同步构建产物到 OSS
-          aliyun oss sync dist/ oss://funsdata-doc-website/ \
-            --delete \
-            --exclude ".git/*"
+          aliyun oss sync dist/ oss://funsdata-doc-website/ --delete
 
           echo "✅ Site deployed successfully!"
 ```
@@ -293,7 +291,7 @@ jobs:
       - name: Sync docs to OSS
         run: |
           # 同步所有文档和资源文件到 OSS
-          aliyun oss sync . oss://funsdata-docs/ \
+          aliyun oss sync . oss://funsdata-doc/ \
             --include "*.md" \
             --include "*.png" \
             --include "*.jpg" \
@@ -304,8 +302,6 @@ jobs:
             --include "*.webm" \
             --include "*.zip" \
             --include "*.pdf" \
-            --exclude ".git/*" \
-            --exclude ".github/*" \
             --delete
 
           echo "✅ Docs synced successfully!"

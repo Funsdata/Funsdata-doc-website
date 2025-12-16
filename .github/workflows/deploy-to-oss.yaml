@@ -48,8 +48,6 @@ jobs:
       - name: Deploy to OSS
         run: |
           # 同步构建产物到 OSS
-          aliyun oss sync dist/ oss://funsdata-doc-website/ \
-            --delete \
-            --exclude ".git/*"
+          aliyun oss sync dist/ oss://funsdata-doc-website/ --delete
 
           echo "✅ Site deployed successfully!"
