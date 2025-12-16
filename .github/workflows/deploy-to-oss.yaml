@@ -25,7 +25,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_DOCS_CDN_BASE_URL: https://funsdata-doc.oss-cn-beijing.aliyuncs.com
+          VITE_DOCS_CDN_BASE_URL: https://funsdata-doc.oss-ap-southeast-1.aliyuncs.com
           VITE_DOCS_REPO_OWNER: Funsdata
           VITE_DOCS_REPO_NAME: FunsdataBI-doc
           VITE_DOCS_REPO_BRANCH: master
@@ -41,47 +41,47 @@ jobs:
           aliyun configure set \
             --profile default \
             --mode AK \
-            --region cn-beijing \
+            --region ap-southeast-1 \
             --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
       - name: Deploy to OSS
         run: |
           # 先删除旧文件
-          aliyun oss rm oss://funsdata-doc-webiste/ --recursive --force || true
+          aliyun oss rm oss://funsdata-doc-website/ --recursive --force || true
 
           # 上传 HTML 文件
-          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+          aliyun oss cp dist/ oss://funsdata-doc-website/ --recursive \
             --include "*.html" \
             --meta "Content-Type:text/html; charset=utf-8"
 
           # 上传 JS 文件
-          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+          aliyun oss cp dist/ oss://funsdata-doc-website/ --recursive \
             --include "*.js" \
             --meta "Content-Type:application/javascript; charset=utf-8"
 
           # 上传 CSS 文件
-          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+          aliyun oss cp dist/ oss://funsdata-doc-website/ --recursive \
             --include "*.css" \
             --meta "Content-Type:text/css; charset=utf-8"
 
           # 上传 JSON 文件
-          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+          aliyun oss cp dist/ oss://funsdata-doc-website/ --recursive \
             --include "*.json" \
             --meta "Content-Type:application/json; charset=utf-8"
 
           # 上传 SVG 文件
-          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+          aliyun oss cp dist/ oss://funsdata-doc-website/ --recursive \
             --include "*.svg" \
             --meta "Content-Type:image/svg+xml"
 
           # 上传图片文件
-          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+          aliyun oss cp dist/ oss://funsdata-doc-website/ --recursive \
             --include "*.png" --include "*.jpg" --include "*.jpeg" \
             --include "*.gif" --include "*.webp" --include "*.ico"
 
           # 上传字体文件
-          aliyun oss cp dist/ oss://funsdata-doc-webiste/ --recursive \
+          aliyun oss cp dist/ oss://funsdata-doc-website/ --recursive \
             --include "*.woff" --include "*.woff2" --include "*.ttf" --include "*.eot"
 
           echo "✅ Site deployed successfully!"
